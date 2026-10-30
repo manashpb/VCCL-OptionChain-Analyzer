@@ -10,10 +10,10 @@ Production PM2 configuration uses `FNO_AOC_BRIDGE=1`: live, expiry and historica
 
 ## Collection and storage
 
-- NIFTY nearest available expiry; Monday-Friday, 09:15 through 14:00 IST inclusive: 286 requested minute slots.
+- NIFTY and NIFTY-AI independently, each using its nearest available expiry; Monday-Friday, 09:15 through 14:00 IST inclusive: 286 requested minute slots.
 - Live `/live-data` is prioritized for the current minute. Missing earlier minutes use AOC `/historical-data` with the requested timestamp. Restarts resume from SQLite without duplicating valid minutes.
 - Requests use the verified AOC v27 contract from FNO-Analyzer: bearer authentication, compact keys/values, symbol/date/expiry validation, two-second pacing, timeout and rate-limit cooldown. Production shares the FNO client pacing and token lifecycle; temporary FNO restart/authentication failures retry automatically. Standalone authentication failures pause requests until the token file changes.
-- SQLite WAL transactions with a unique minute primary key and day index. Full normalized snapshots and chains are gzip compressed in database blobs; chart API returns only needed fields and caches by database revision.
+- SQLite WAL transactions with a unique (symbol, minute) primary key and day index. Full normalized snapshots and chains are gzip compressed in database blobs; chart API returns only needed fields and caches by database revision.
 - Provider timestamps are preserved. Source offsets greater than 60 seconds are stale gaps and retried after five minutes. Missing slots are explicit gaps. A failed request never fabricates data. Market holidays may yield unavailable snapshots; weekend collection is skipped.
 - **Only the current IST day is stored/served in production.** On startup and daily rollover, prior-day rows are deleted, secure-delete is enabled, and WAL checkpoint plus VACUUM remove obsolete database pages. No archive exports/backups are created by the app. Data capture stops after the 14:00 minute, while missing minutes can continue to backfill. Rollover runs even when no browser is open.
 - The database is `data/current-day.sqlite3` (`OPTIONCHAIN_DB` override). One recorder process only. The UI polls every 15 seconds and follows the latest snapshot unless an earlier reference is selected.
@@ -33,3 +33,5 @@ Use `ecosystem.config.cjs` with PM2: loopback 5005, workspace authentication ena
 ## Verify
 
 `npm run check` and `npm test`. Tests use synthetic fixtures, not private downloaded data. Tests cover ranking, normalization, markers, ATM/Cross OI, source validation, the inclusive schedule, retention, deduplication, live priority, backfill, assets and authentication.
+
+Select NIFTY or NIFTY-AI in the Symbol dropdown. Both use the shared FNO token, recording window and current-day retention. NIFTY-AI currently returns 16 strikes and underlying label `nifty`; the requested API symbol is stored separately so its records never overwrite NIFTY. Existing NIFTY records are preserved by an atomic schema migration.

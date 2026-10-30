@@ -23,8 +23,11 @@ test('SQLite deduplicates minutes, replaces stale records and purges old days',(
   const minute=session().start,record={requested_at:stamp(minute),observed_at:stamp(minute),quality:'stale_or_out_of_window',spot:22000,normalized:{strikes:[{sp:22000,cOI:2,pOI:3}]}};
   store.save(minute,'3-Nov-2026',record,'historical');store.save(minute,'3-Nov-2026',{...record,quality:'near_requested_time'},'live');store.save(minute,'3-Nov-2026',record,'historical');
   assert.ok(store.freshness().lastSavedAt);assert.equal(store.freshness().latestSnapshotAt,record.observed_at);assert.equal(store.read()[0].records.length,1);assert.equal(store.read()[0].records[0].quality,'near_requested_time');
+  store.save(minute,'3-Nov-2026',{...record,quality:'near_requested_time',spot:23000},'live','NIFTY-AI');
+  assert.equal(store.read().length,2);assert.equal(store.read(dayAt(),'NIFTY-AI')[0].records[0].spot,23000);assert.equal(store.read(dayAt(),'NIFTY')[0].records[0].spot,22000);
+  assert.equal(store.saved(dayAt(),'NIFTY-AI').size,1);assert.ok(store.freshness(dayAt(),'NIFTY-AI').lastSavedAt);
   store.db.prepare('INSERT INTO snapshots(day,minute,expiry,quality,source,payload) VALUES(?,?,?,?,?,?)').run('2000-01-01',1,'old','bad','historical',Buffer.from('old'));
-  store.purge();assert.equal(store.db.prepare('SELECT count(*) n FROM snapshots').get().n,1);assert.throws(()=>store.save(minute-86400000,'old',record,'live'));
+  store.purge();assert.equal(store.db.prepare('SELECT count(*) n FROM snapshots').get().n,2);assert.throws(()=>store.save(minute-86400000,'old',record,'live'));
  }finally{store.close();rmSync(folder,{recursive:true,force:true});}
 });
 test('recorder prioritizes live minute, then backfills and does not refetch valid minute',async()=>{

@@ -15,6 +15,8 @@ test('shared FNO adapter forwards exact AOC routes without credentials and prese
   assert.equal(validate(await client.historical(expiry,minute),minute,expiry).quality,'near_requested_time');
   assert.equal(seen[1].url,'/api/data?ticker=NIFTY');
   assert.equal(seen[2].url,`/api/historical?ticker=NIFTY&expiry=${expiry}&timestamp=${minute}`);
+  await client.live('NIFTY-AI');await client.historical(expiry,minute,'NIFTY-AI');await client.expiries('NIFTY-AI');assert.equal(seen[3].url,'/api/data?ticker=NIFTY-AI');assert.ok(seen[4].url.includes('ticker=NIFTY-AI'));assert.equal(seen[5].url,'/api/expiries?ticker=NIFTY-AI');
+  assert.equal(validate(chain,minute,expiry,'NIFTY-AI').normalized.strikes.length,80);
   for(const req of seen)assert.equal(req.headers.authorization,undefined);
   assert.throws(()=>new FnoAoc('https://example.com'));
  }finally{await new Promise(r=>server.close(r));}

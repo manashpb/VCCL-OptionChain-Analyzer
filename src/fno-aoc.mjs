@@ -13,7 +13,7 @@ export class FnoAoc{
   if(!response.ok)throw Error('AOC via FNO temporarily unavailable (HTTP '+response.status+'); check FNO Token Sync');
   return response.json();
  }
- async expiries(){const p=await this.request('/api/expiries',{ticker:'NIFTY'});return p.expiries??[];}
- historical(expiry,minute){return this.request('/api/historical',{ticker:'NIFTY',expiry,timestamp:minute});}
- live(){return this.request('/api/data',{ticker:'NIFTY'});}
+ async expiries(symbol='NIFTY'){const p=await this.request('/api/expiries',{ticker:symbol});return p.expiries??[];}
+ historical(expiry,minute,symbol='NIFTY'){return this.request('/api/historical',{ticker:symbol,expiry,timestamp:minute});}
+ live(symbol='NIFTY'){return this.request('/api/data',{ticker:symbol});}
 }

@@ -17,3 +17,5 @@ Stability charts use a fixed 50-100% Y-axis (including Reset zoom) with a dotted
 Production uses FNO_AOC_BRIDGE=1 through the existing FNO Analyzer loopback API, sharing its AOC token, request pacing and Token Sync. Never read/copy protected FNO secrets or fall back to an independent token when the bridge fails. src/fno-aoc.mjs preserves full normalized chains.
 
 Analyzer responses must set their own CSP so the portal restrictive login CSP does not block scripts/styles. Status exposes latestSnapshotAt and persistent lastSavedAt from SQLite; UI displays both in IST independently of replay reference time.
+
+Both NIFTY and NIFTY-AI are recorded independently. SQLite key is (symbol, minute); legacy NIFTY rows migrate atomically. AOC NIFTY-AI currently reports underlying s=nifty (16-strike chain); accept that explicit alias only for requested NIFTY-AI and retain requested symbol as dataset identity. UI symbol selector preserves selection across polling; freshness/status are per symbol.

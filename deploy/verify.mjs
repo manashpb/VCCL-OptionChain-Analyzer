@@ -15,8 +15,9 @@ try{
  const frontend=await get('/optionchain/',cookie);assert.ok(frontend.headers.get('content-security-policy')?.includes("script-src 'self'"));assert.ok(frontend.headers.get('content-security-policy')?.includes("style-src 'self' 'unsafe-inline'"));
  for(const route of ['/optionchain/','/optionchain/app.mjs','/optionchain/plotly.min.js'])assert.equal((await get(route,cookie)).status,200);
  const status=await(await get('/optionchain/api/status',cookie)).json();
+ const aiStatus=await(await get('/optionchain/api/status?symbol=NIFTY-AI',cookie)).json();assert.equal(aiStatus.symbol,'NIFTY-AI');console.log('NIFTY-AI status:',JSON.stringify(aiStatus));
  const sets=await(await get('/optionchain/api/data',cookie)).json();
- console.log(JSON.stringify({status,sessions:sets.map(s=>({date:s.date,expiry:s.expiry,slots:s.records.length,valid:s.records.filter(r=>r.quality==='near_requested_time').length,live:s.records.filter(r=>r.source==='live').length,historical:s.records.filter(r=>r.source==='historical').length}))},null,2));
+ console.log(JSON.stringify({status,sessions:sets.map(s=>({symbol:s.symbol,date:s.date,expiry:s.expiry,slots:s.records.length,valid:s.records.filter(r=>r.quality==='near_requested_time').length,live:s.records.filter(r=>r.source==='live').length,historical:s.records.filter(r=>r.source==='historical').length}))},null,2));
  assert.equal((await fetch('http://127.0.0.1:5005/optionchain/api/data')).status,401);
  const logoutCsrf=/name="csrf" value="([^"]+)"/.exec(home)[1];
  await fetch(origin+'/logout',{method:'POST',redirect:'manual',headers:{Cookie:cookie,Origin:origin},body:new URLSearchParams({csrf:logoutCsrf})});

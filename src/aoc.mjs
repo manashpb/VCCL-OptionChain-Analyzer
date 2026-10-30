@@ -18,7 +18,7 @@ export class Aoc{
   if(!response.ok)throw Error('AOC returned HTTP '+response.status);
   const payload=await response.json();if(payload.statusCode&&payload.statusCode!==200)throw Error('AOC rejected the request');return payload;
  }
- expiries(){return this.request('get-expiry-dates',{ticker:'NIFTY'});}
- historical(expiry,minute){return this.request('historical-data',{ticker:'NIFTY',expiry,timestamp:minute});}
- live(){return this.request('live-data',{symbol:'NIFTY',cacheBust:Date.now()});}
+ expiries(symbol='NIFTY'){return this.request('get-expiry-dates',{ticker:symbol});}
+ historical(expiry,minute,symbol='NIFTY'){return this.request('historical-data',{ticker:symbol,expiry,timestamp:minute});}
+ live(symbol='NIFTY'){return this.request('live-data',{symbol,cacheBust:Date.now()});}
 }

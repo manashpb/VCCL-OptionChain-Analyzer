@@ -8,7 +8,7 @@ const clock=t=>new Date(t).toLocaleTimeString('en-GB',{timeZone:'Asia/Kolkata',h
 
 const source=t=>t?new Date(t).toLocaleTimeString('en-GB',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit'}):'unavailable';
 
-let sets=[], current, generation=0, activeTab="stability";
+let sets=[], current, generation=0, activeTab="stability", selectedSymbol="NIFTY", refreshGeneration=0;
 
 for(const [index,metric] of metrics.entries()){
 
@@ -47,13 +47,13 @@ async function render(){
     const shapes=result.markers.map(t=>({type:'line',xref:'x',yref:'paper',x0:clock(t),x1:clock(t),y0:0,y1:1,line:{color:'#8898ac',width:1,dash:'dot'},layer:'below'}));
 
     shapes.push({type:'line',xref:'paper',yref:'y',x0:0,x1:1,y0:75,y1:75,line:{color:'#64748b',width:1.5,dash:'dot'},layer:'above'});
-    await Plotly.react(id,traces,{margin:{l:52,r:20,t:15,b:67},paper_bgcolor:'#fff',plot_bgcolor:'#fff',font:{family:'Segoe UI, Arial',size:11,color:'#687a90'},xaxis:{type:'category',categoryorder:'array',categoryarray:current.records.map(r=>clock(r.requested_at)),tickmode:'array',tickvals:current.records.filter((r,i)=>i%60===0||i===current.records.length-1).map(r=>clock(r.requested_at)),title:{text:'Time · IST',font:{size:10}},gridcolor:'#f0f3f7',zeroline:false,range:[0,Math.max(1,end)]},yaxis:{title:{text:metric.name+' %',font:{size:11}},range:[50,100],fixedrange:true,ticksuffix:'%',dtick:25,gridcolor:'#e8edf4',zeroline:false},legend:{orientation:'h',y:-0.23,x:0,traceorder:'normal',font:{size:11}},hovermode:'x unified',shapes,uirevision:`${current.date}-${current.expiry}`,showlegend:true},{responsive:true,displaylogo:false,scrollZoom:true,modeBarButtonsToRemove:['lasso2d','select2d'],toImageButtonOptions:{filename:`NIFTY-${metric.id}-${side}-${current.date}`,scale:2}});
+    await Plotly.react(id,traces,{margin:{l:52,r:20,t:15,b:67},paper_bgcolor:'#fff',plot_bgcolor:'#fff',font:{family:'Segoe UI, Arial',size:11,color:'#687a90'},xaxis:{type:'category',categoryorder:'array',categoryarray:current.records.map(r=>clock(r.requested_at)),tickmode:'array',tickvals:current.records.filter((r,i)=>i%60===0||i===current.records.length-1).map(r=>clock(r.requested_at)),title:{text:'Time · IST',font:{size:10}},gridcolor:'#f0f3f7',zeroline:false,range:[0,Math.max(1,end)]},yaxis:{title:{text:metric.name+' %',font:{size:11}},range:[50,100],fixedrange:true,ticksuffix:'%',dtick:25,gridcolor:'#e8edf4',zeroline:false},legend:{orientation:'h',y:-0.23,x:0,traceorder:'normal',font:{size:11}},hovermode:'x unified',shapes,uirevision:`${current.symbol}-${current.date}-${current.expiry}`,showlegend:true},{responsive:true,displaylogo:false,scrollZoom:true,modeBarButtonsToRemove:['lasso2d','select2d'],toImageButtonOptions:{filename:`NIFTY-${metric.id}-${side}-${current.date}`,scale:2}});
 
   }
 
 }
 
-$('session').addEventListener('change',()=>{current=sets[Number($('session').value)];$('cutoff').max=current.records.length-1;$('cutoff').value=current.records.length-1;$('expiry').textContent=`Expiry ${current.expiry}`;render();});
+$('session').addEventListener('change',()=>{selectedSymbol=$('session').value;refreshData();});
 
 let timer;$('cutoff').addEventListener('input',()=>{clearTimeout(timer);timer=setTimeout(render,90);});
 
@@ -62,15 +62,17 @@ $('latest').onclick=()=>{$('cutoff').value=current.records.length-1;render();};
 $('reset').onclick=()=>{if(activeTab==='comparison'){for(const el of document.querySelectorAll('#strike-grid .chart'))Plotly.relayout(el,{'xaxis.autorange':true,'yaxis.autorange':true});return;}for(const m of metrics)for(const s of ['c','p'])Plotly.relayout(`chart-${m.id}-${s}`,{'xaxis.range':[0,Math.max(1,Number($('cutoff').value))],'yaxis.range':[50,100]});};
 
 async function refreshData(){
+ const refresh=++refreshGeneration;
  try{
-  const [res,statusRes]=await Promise.all([fetch('./api/data'),fetch('./api/status')]);
+  const [res,statusRes]=await Promise.all([fetch('./api/data'),fetch('./api/status?symbol='+encodeURIComponent(selectedSymbol))]);
   if(!res.ok||!statusRes.ok)throw Error('Workspace session or data service unavailable');
-  const status=await statusRes.json();const updated=t=>t?new Date(t).toLocaleString('en-GB',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',second:'2-digit'})+' IST':'Not available yet';$('data-freshness').textContent=status.mode==='replay'?'Local replay - saved archive':`Latest data snapshot: ${updated(status.latestSnapshotAt)} | Last successful save: ${updated(status.lastSavedAt)}`;document.querySelector('.tag').textContent=status.mode==='replay'?'LOCAL REPLAY':'CURRENT DAY';$('recorder-status').textContent=`${status.mode==='replay'?'Local replay':status.schedule+' | '+status.status+' | '+(status.saved??0)+' / '+(status.expected??0)+' snapshots'}${status.error?' | '+status.error:''}`;
-  const next=await res.json(),old=current,oldEnd=Number($('cutoff').value),follow=!old||oldEnd===old.records.length-1;
-  if(!next.length){sets=[];current=null;$('session').replaceChildren();$('coverage').textContent='Waiting for current-day AOC snapshots';$('expiry').textContent='No current-day snapshots';for(const el of document.querySelectorAll('.js-plotly-plot'))Plotly.purge(el);$('strike-grid').replaceChildren();$('atm-info').textContent='';return;}
-  const changed=!old||JSON.stringify(old)!==JSON.stringify(next[0]);sets=next;current=sets[0];
-  $('session').replaceChildren(...sets.map((s,i)=>new Option(`${s.date} / ${s.symbol}`,i)));$('cutoff').max=current.records.length-1;
-  $('cutoff').value=follow||old?.date!==current.date?current.records.length-1:Math.min(oldEnd,current.records.length-1);$('expiry').textContent=`Expiry ${current.expiry}`;
+  const status=await statusRes.json();if(refresh!==refreshGeneration)return;const updated=t=>t?new Date(t).toLocaleString('en-GB',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',second:'2-digit'})+' IST':'Not available yet';$('data-freshness').textContent=status.mode==='replay'?'Local replay - saved archive':`Latest data snapshot: ${updated(status.latestSnapshotAt)} | Last successful save: ${updated(status.lastSavedAt)}`;document.querySelector('.tag').textContent=status.mode==='replay'?'LOCAL REPLAY':'CURRENT DAY';$('recorder-status').textContent=`${status.mode==='replay'?'Local replay':status.schedule+' | '+status.status+' | '+(status.saved??0)+' / '+(status.expected??0)+' snapshots'}${status.error?' | '+status.error:''}`;
+  const next=await res.json();if(refresh!==refreshGeneration)return;const old=current,oldEnd=Number($('cutoff').value),follow=!old||oldEnd===old.records.length-1;
+  sets=next;const chosen=sets.find(s=>s.symbol===selectedSymbol);$('session').replaceChildren(...['NIFTY','NIFTY-AI'].map(symbol=>new Option(symbol,symbol,false,symbol===selectedSymbol)));$('instrument-symbol').textContent=selectedSymbol;
+  if(!chosen){current=null;$('coverage').textContent=`Waiting for ${selectedSymbol} current-day AOC snapshots`;$('expiry').textContent='No current-day snapshots';for(const el of document.querySelectorAll('.js-plotly-plot'))Plotly.purge(el);$('strike-grid').replaceChildren();$('atm-info').textContent='';return;}
+  const changed=!old||JSON.stringify(old)!==JSON.stringify(chosen);current=chosen;
+  $('cutoff').max=current.records.length-1;
+  $('cutoff').value=follow||old?.date!==current.date||old?.symbol!==current.symbol?current.records.length-1:Math.min(oldEnd,current.records.length-1);$('expiry').textContent=`Expiry ${current.expiry}`;
   if(changed)render();
  }catch(e){$('recorder-status').textContent=e.message;$('data-freshness').textContent='Unable to check data update time. Sign in again if your session expired.';}
 }

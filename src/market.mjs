@@ -18,10 +18,10 @@ export function normalize(payload){
   if(Array.isArray(data.strikes)&&data.snapshot&&typeof data.snapshot==='object')return {snapshot:data.snapshot,strikes:data.strikes};
  return {snapshot:decode(data.snapshot),strikes:(data.strikes?.v??[]).map(v=>decode({k:data.strikes.k,v} ))};
 }
-export function validate(payload,minute,expiry){
+export function validate(payload,minute,expiry,symbol='NIFTY'){
  const data=normalize(payload),s=data.snapshot;
  const ts=Number(s.ts),observed=ts>1e11?ts:ts*1000;
- if(String(s.s).toUpperCase()!=='NIFTY'||expiryDay(s.exp)!==expiryDay(expiry)||!data.strikes.length||!Number.isFinite(observed)||dayAt(observed)!==dayAt(minute)||expiryDay(s.dt)!==dayAt(minute))throw Error('AOC snapshot symbol, expiry or date mismatch');
+ if(!(symbol==='NIFTY-AI'?['NIFTY','NIFTY-AI']:[symbol]).includes(String(s.s).toUpperCase())||expiryDay(s.exp)!==expiryDay(expiry)||!data.strikes.length||!Number.isFinite(observed)||dayAt(observed)!==dayAt(minute)||expiryDay(s.dt)!==dayAt(minute))throw Error('AOC snapshot symbol, expiry or date mismatch');
  const offset=(observed-minute)/1000;
  return {requested_at:stamp(minute),observed_at:stamp(observed),quality:Math.abs(offset)<=60?'near_requested_time':'stale_or_out_of_window',spot:Number(s.uv),normalized:data};
 }

@@ -32,8 +32,8 @@ const data=replay?await dataset():null;
 const store=replay?null:new Store(process.env.OPTIONCHAIN_DB||path.join(root,'data','current-day.sqlite3'));
 store?.purge();
 const provider=process.env.FNO_AOC_BRIDGE==='1'?new FnoAoc(process.env.FNO_AOC_URL||'http://127.0.0.1:8001'):new Aoc(process.env.AOC_TOKEN_FILE||path.join(root,'aoctoken.txt'));
-const recorder=replay?null:new Recorder(store,provider);
-if(process.env.OPTIONCHAIN_RECORD!=='0')recorder?.start();
+const recorders=replay?{}:Object.fromEntries(['NIFTY','NIFTY-AI'].map(symbol=>[symbol,new Recorder(store,provider,symbol)]));
+if(process.env.OPTIONCHAIN_RECORD!=='0')for(const recorder of Object.values(recorders))recorder.start();
 let cacheKey='',cacheBody='';
 function currentData(){if(replay)return JSON.stringify(data);store.purge();const key=dayAt()+':'+store.revision;if(key!==cacheKey){cacheBody=JSON.stringify(store.read());cacheKey=key;}return cacheBody;}
 const assets=new Map([['','index.html'],['app.mjs','app.mjs'],['analytics.mjs','analytics.mjs'],['style.css','style.css']]);
@@ -51,7 +51,7 @@ export const server=http.createServer(async(req,res)=>{
     if(url.pathname==='/optionchain'){res.writeHead(302,{Location:prefix});return res.end();}
     const route=url.pathname.startsWith(prefix)?url.pathname.slice(prefix.length):url.pathname.slice(1);
     if(route==='api/data'){res.setHeader('Content-Type','application/json');return res.end(currentData());}
-    if(route==='api/status'){res.setHeader('Content-Type','application/json');return res.end(JSON.stringify(replay?{status:'replay',mode:'replay'}:{...recorder.state,...store.freshness(),mode:'current-day',day:dayAt(),schedule:'09:15-14:00 IST',retention:'Current IST day only'}));}
+    if(route==='api/status'){const symbol=url.searchParams.get('symbol')||'NIFTY';if(!['NIFTY','NIFTY-AI'].includes(symbol)){res.writeHead(400);return res.end('Invalid symbol');}const recorder=recorders[symbol];res.setHeader('Content-Type','application/json');return res.end(JSON.stringify(replay?{status:'replay',mode:'replay'}:{...recorder.state,...store.freshness(dayAt(),symbol),symbol,mode:'current-day',day:dayAt(),schedule:'09:15-14:00 IST',retention:'Current IST day only'}));}
     let file=assets.get(route),type=file?.endsWith('.css')?'text/css':file?.endsWith('.mjs')?'text/javascript':'text/html';
     if(route==='plotly.min.js'){file='../node_modules/plotly.js-dist-min/plotly.min.js';type='text/javascript';}
     if(!file){res.writeHead(404);return res.end('Not found');}
@@ -61,4 +61,4 @@ export const server=http.createServer(async(req,res)=>{
 });
 server.listen(port,'127.0.0.1',()=>console.log(`OptionChain Analyzer: http://127.0.0.1:${port}/optionchain/ (${workspace?'workspace authentication':'local preview'})`));
 
-for(const signal of ['SIGINT','SIGTERM'])process.on(signal,()=>{recorder?.stop();server.close(()=>{store?.close();process.exit(0);});});
+for(const signal of ['SIGINT','SIGTERM'])process.on(signal,()=>{for(const recorder of Object.values(recorders))recorder.stop();server.close(()=>{store?.close();process.exit(0);});});
