@@ -4,6 +4,7 @@ import {fileURLToPath} from 'node:url';
 import path from 'node:path';
 import {Store} from './src/store.mjs';
 import {Aoc} from './src/aoc.mjs';
+import {FnoAoc} from './src/fno-aoc.mjs';
 import {Recorder} from './src/recorder.mjs';
 import {dayAt} from './src/market.mjs';
 const root=path.dirname(fileURLToPath(import.meta.url));
@@ -30,7 +31,8 @@ const replay=process.env.OPTIONCHAIN_REPLAY==='1';
 const data=replay?await dataset():null;
 const store=replay?null:new Store(process.env.OPTIONCHAIN_DB||path.join(root,'data','current-day.sqlite3'));
 store?.purge();
-const recorder=replay?null:new Recorder(store,new Aoc(process.env.AOC_TOKEN_FILE||path.join(root,'aoctoken.txt')));
+const provider=process.env.FNO_AOC_BRIDGE==='1'?new FnoAoc(process.env.FNO_AOC_URL||'http://127.0.0.1:8001'):new Aoc(process.env.AOC_TOKEN_FILE||path.join(root,'aoctoken.txt'));
+const recorder=replay?null:new Recorder(store,provider);
 if(process.env.OPTIONCHAIN_RECORD!=='0')recorder?.start();
 let cacheKey='',cacheBody='';
 function currentData(){if(replay)return JSON.stringify(data);store.purge();const key=dayAt()+':'+store.revision;if(key!==cacheKey){cacheBody=JSON.stringify(store.read());cacheKey=key;}return cacheBody;}

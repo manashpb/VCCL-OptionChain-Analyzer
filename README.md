@@ -6,11 +6,13 @@ Interactive NIFTY strike stability and ATM CE/PE comparisons, with current-day A
 
 Requires Node.js 22.13+ (uses built-in SQLite). Run `npm ci`, put your AOC bearer token in the ignored `aoctoken.txt` file with restrictive permissions, and run `npm start`. Open `http://127.0.0.1:5005/optionchain/` locally. Never commit the token. `AOC_TOKEN_FILE` can point at another private token file; token changes are read on each request without a restart. The Node SQLite module is experimental on Node 22.
 
+Production PM2 configuration uses `FNO_AOC_BRIDGE=1`: live, expiry and historical requests go through FNO Analyzer at loopback 8001. The same FNO AOC token and existing FNO Token Sync apply automatically. This app does not read or copy the protected FNO credentials. An independent token file is only for standalone development without the bridge.
+
 ## Collection and storage
 
 - NIFTY nearest available expiry; Monday-Friday, 09:15 through 14:00 IST inclusive: 286 requested minute slots.
 - Live `/live-data` is prioritized for the current minute. Missing earlier minutes use AOC `/historical-data` with the requested timestamp. Restarts resume from SQLite without duplicating valid minutes.
-- Requests use the verified AOC v27 contract from FNO-Analyzer: bearer authentication, compact keys/values, symbol/date/expiry validation, two-second pacing, timeout and rate-limit cooldown. Authentication failures pause requests until the token file changes.
+- Requests use the verified AOC v27 contract from FNO-Analyzer: bearer authentication, compact keys/values, symbol/date/expiry validation, two-second pacing, timeout and rate-limit cooldown. Production shares the FNO client pacing and token lifecycle; temporary FNO restart/authentication failures retry automatically. Standalone authentication failures pause requests until the token file changes.
 - SQLite WAL transactions with a unique minute primary key and day index. Full normalized snapshots and chains are gzip compressed in database blobs; chart API returns only needed fields and caches by database revision.
 - Provider timestamps are preserved. Source offsets greater than 60 seconds are stale gaps and retried after five minutes. Missing slots are explicit gaps. A failed request never fabricates data. Market holidays may yield unavailable snapshots; weekend collection is skipped.
 - **Only the current IST day is stored/served in production.** On startup and daily rollover, prior-day rows are deleted, secure-delete is enabled, and WAL checkpoint plus VACUUM remove obsolete database pages. No archive exports/backups are created by the app. Data capture stops after the 14:00 minute, while missing minutes can continue to backfill. Rollover runs even when no browser is open.

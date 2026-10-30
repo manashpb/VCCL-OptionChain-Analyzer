@@ -15,6 +15,7 @@ export function expiryDay(v){
 }
 export function normalize(payload){
  const data=payload.data??payload,decode=obj=>Object.fromEntries((obj?.k??[]).map((k,i)=>[k,obj.v?.[i]??null]));
+  if(Array.isArray(data.strikes)&&data.snapshot&&typeof data.snapshot==='object')return {snapshot:data.snapshot,strikes:data.strikes};
  return {snapshot:decode(data.snapshot),strikes:(data.strikes?.v??[]).map(v=>decode({k:data.strikes.k,v} ))};
 }
 export function validate(payload,minute,expiry){

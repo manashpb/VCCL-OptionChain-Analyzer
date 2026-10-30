@@ -9,7 +9,7 @@
   "scripts": {
     "start": "node server.mjs",
     "test": "node --test tests/*.test.mjs",
-    "check": "node --check server.mjs && node --check public/app.mjs && node --check public/analytics.mjs && node --check src/market.mjs && node --check src/store.mjs && node --check src/aoc.mjs && node --check src/recorder.mjs"
+    "check": "node --check server.mjs && node --check public/app.mjs && node --check public/analytics.mjs && node --check src/market.mjs && node --check src/store.mjs && node --check src/aoc.mjs && node --check src/recorder.mjs && node --check src/fno-aoc.mjs"
   },
   "keywords": [],
   "author": "",
