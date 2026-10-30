@@ -9,3 +9,5 @@
 .data-freshness{padding:12px 16px;background:#e7f4ee;border:1px solid #c5e3d6;border-radius:8px;color:#176b51;font-size:13px;margin-top:16px;font-weight:600}#recorder-status{font-size:12px;color:#64748b;margin-top:10px}
 
 .plot-sizing .window-select{display:grid;gap:6px;width:140px;flex-shrink:0}.window-select select{width:100%}html{overflow-anchor:none}
+
+.comparison-controls .window-select{display:grid;gap:6px;min-width:140px}.comparison-controls .window-select select{margin-left:0}

@@ -129,10 +129,11 @@ async function renderComparison(end,run){
 
 }
 
-for(const name of ['stability','comparison'])$('tab-'+name).onclick=()=>{activeTab=name;$('time-window').value=timeWindows[name];applyPlotSize();$('reference-help').textContent=name==='stability'?'Top four strikes are selected at this time. Earlier snapshots use their own highest strike as 100%.':'ATM and the seven strikes are selected at this time, then held fixed across the plotted history.';document.querySelector('.status > span:last-child').hidden=name!=='stability';document.querySelector('.method').hidden=name!=='stability';$('plots').hidden=name!=='stability';$('comparison').hidden=name!=='comparison';for(const n of ['stability','comparison'])$('tab-'+n).setAttribute('aria-pressed',String(n===name));document.querySelector('h1').textContent=name==='stability'?'Strike stability':'ATM  /  CE vs PE';render();};
+for(const name of ['stability','comparison'])$('tab-'+name).onclick=()=>{activeTab=name;$('time-window').value=timeWindows.stability;$('comparison-time-window').value=timeWindows.comparison;$('time-window').parentElement.hidden=name!=='stability';applyPlotSize();$('reference-help').textContent=name==='stability'?'Top four strikes are selected at this time. Earlier snapshots use their own highest strike as 100%.':'ATM and the seven strikes are selected at this time, then held fixed across the plotted history.';document.querySelector('.status > span:last-child').hidden=name!=='stability';document.querySelector('.method').hidden=name!=='stability';$('plots').hidden=name!=='stability';$('comparison').hidden=name!=='comparison';for(const n of ['stability','comparison'])$('tab-'+n).setAttribute('aria-pressed',String(n===name));document.querySelector('h1').textContent=name==='stability'?'Strike stability':'ATM  /  CE vs PE';render();};
 
 $('quantity').onchange=()=>render();
-$('time-window').onchange=()=>{timeWindows[activeTab]=$('time-window').value;render();};
+$('time-window').onchange=()=>{timeWindows.stability=$('time-window').value;render();};
+$('comparison-time-window').onchange=()=>{timeWindows.comparison=$('comparison-time-window').value;render();};
 
 
 const plotSizes={stability:{width:100,height:100},comparison:{width:100,height:100}};
