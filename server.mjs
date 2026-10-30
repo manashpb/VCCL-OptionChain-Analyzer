@@ -38,6 +38,7 @@ let cacheKey='',cacheBody='';
 function currentData(){if(replay)return JSON.stringify(data);store.purge();const key=dayAt()+':'+store.revision;if(key!==cacheKey){cacheBody=JSON.stringify(store.read());cacheKey=key;}return cacheBody;}
 const assets=new Map([['','index.html'],['app.mjs','app.mjs'],['analytics.mjs','analytics.mjs'],['style.css','style.css']]);
 export const server=http.createServer(async(req,res)=>{
+  res.setHeader('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'");
   res.setHeader('X-Content-Type-Options','nosniff'); res.setHeader('Cache-Control','no-store');
   try{
     if(workspace){
@@ -50,7 +51,7 @@ export const server=http.createServer(async(req,res)=>{
     if(url.pathname==='/optionchain'){res.writeHead(302,{Location:prefix});return res.end();}
     const route=url.pathname.startsWith(prefix)?url.pathname.slice(prefix.length):url.pathname.slice(1);
     if(route==='api/data'){res.setHeader('Content-Type','application/json');return res.end(currentData());}
-    if(route==='api/status'){res.setHeader('Content-Type','application/json');return res.end(JSON.stringify(replay?{status:'replay',mode:'replay'}:{...recorder.state,mode:'current-day',day:dayAt(),schedule:'09:15-14:00 IST',retention:'Current IST day only'}));}
+    if(route==='api/status'){res.setHeader('Content-Type','application/json');return res.end(JSON.stringify(replay?{status:'replay',mode:'replay'}:{...recorder.state,...store.freshness(),mode:'current-day',day:dayAt(),schedule:'09:15-14:00 IST',retention:'Current IST day only'}));}
     let file=assets.get(route),type=file?.endsWith('.css')?'text/css':file?.endsWith('.mjs')?'text/javascript':'text/html';
     if(route==='plotly.min.js'){file='../node_modules/plotly.js-dist-min/plotly.min.js';type='text/javascript';}
     if(!file){res.writeHead(404);return res.end('Not found');}

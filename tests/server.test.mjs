@@ -20,6 +20,7 @@ async function launch(auth){
 test('archive API, assets, secret isolation and real-data bounds',async()=>{
  const {child,url}=await launch(false);
  try{
+  const csp=(await fetch(url)).headers.get('content-security-policy');assert.ok(csp.includes("script-src 'self'"));assert.ok(csp.includes("style-src 'self' 'unsafe-inline'"));
   for(const route of ['', 'app.mjs','analytics.mjs','style.css','plotly.min.js'])assert.equal((await fetch(url+route)).status,200);
   for(const route of ['aoctoken.txt','server.mjs','data/2026-10-29','../aoctoken.txt'])assert.equal((await fetch(url+route)).status,404);
   assert.equal((await fetch(url+'api/data',{method:'POST'})).status,405);

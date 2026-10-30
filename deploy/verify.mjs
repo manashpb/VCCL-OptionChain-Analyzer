@@ -12,6 +12,7 @@ const login=await fetch(origin+'/login',{method:'POST',redirect:'manual',headers
 assert.equal(login.status,303);const cookie=login.headers.get('set-cookie').split(';')[0];
 try{
  const home=await(await get('/',cookie)).text();assert.ok(home.includes('href="/optionchain/"'));
+ const frontend=await get('/optionchain/',cookie);assert.ok(frontend.headers.get('content-security-policy')?.includes("script-src 'self'"));assert.ok(frontend.headers.get('content-security-policy')?.includes("style-src 'self' 'unsafe-inline'"));
  for(const route of ['/optionchain/','/optionchain/app.mjs','/optionchain/plotly.min.js'])assert.equal((await get(route,cookie)).status,200);
  const status=await(await get('/optionchain/api/status',cookie)).json();
  const sets=await(await get('/optionchain/api/data',cookie)).json();

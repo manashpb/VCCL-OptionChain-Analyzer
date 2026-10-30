@@ -15,3 +15,5 @@ Both tabs have independent horizontal (40-160%) and vertical (25-160%) plot sizi
 Stability charts use a fixed 50-100% Y-axis (including Reset zoom) with a dotted horizontal reference at 75% across each subplot.
 
 Production uses FNO_AOC_BRIDGE=1 through the existing FNO Analyzer loopback API, sharing its AOC token, request pacing and Token Sync. Never read/copy protected FNO secrets or fall back to an independent token when the bridge fails. src/fno-aoc.mjs preserves full normalized chains.
+
+Analyzer responses must set their own CSP so the portal restrictive login CSP does not block scripts/styles. Status exposes latestSnapshotAt and persistent lastSavedAt from SQLite; UI displays both in IST independently of replay reference time.
