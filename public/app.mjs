@@ -65,7 +65,7 @@ async function refreshData(){
  try{
   const [res,statusRes]=await Promise.all([fetch('./api/data'),fetch('./api/status')]);
   if(!res.ok||!statusRes.ok)throw Error('Workspace session or data service unavailable');
-  const status=await statusRes.json();$('recorder-status').textContent=`${status.mode==='replay'?'Local replay':status.schedule+' | '+status.status+' | '+(status.saved??0)+' / '+(status.expected??0)+' snapshots'}${status.error?' | '+status.error:''}`;
+  const status=await statusRes.json();document.querySelector('.tag').textContent=status.mode==='replay'?'LOCAL REPLAY':'CURRENT DAY';$('recorder-status').textContent=`${status.mode==='replay'?'Local replay':status.schedule+' | '+status.status+' | '+(status.saved??0)+' / '+(status.expected??0)+' snapshots'}${status.error?' | '+status.error:''}`;
   const next=await res.json(),old=current,oldEnd=Number($('cutoff').value),follow=!old||oldEnd===old.records.length-1;
   if(!next.length){sets=[];current=null;$('session').replaceChildren();$('coverage').textContent='Waiting for current-day AOC snapshots';$('expiry').textContent='No current-day snapshots';for(const el of document.querySelectorAll('.js-plotly-plot'))Plotly.purge(el);$('strike-grid').replaceChildren();$('atm-info').textContent='';return;}
   const changed=!old||JSON.stringify(old)!==JSON.stringify(next[0]);sets=next;current=sets[0];
