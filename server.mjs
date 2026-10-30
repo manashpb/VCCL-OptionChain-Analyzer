@@ -36,7 +36,7 @@ const recorders=replay?{}:Object.fromEntries(['NIFTY','NIFTY-AI'].map(symbol=>[s
 if(process.env.OPTIONCHAIN_RECORD!=='0')for(const recorder of Object.values(recorders))recorder.start();
 let cacheKey='',cacheBody='';
 function currentData(){if(replay)return JSON.stringify(data);store.purge();const key=dayAt()+':'+store.revision;if(key!==cacheKey){cacheBody=JSON.stringify(store.read());cacheKey=key;}return cacheBody;}
-const assets=new Map([['','index.html'],['app.mjs','app.mjs'],['analytics.mjs','analytics.mjs'],['style.css','style.css']]);
+const assets=new Map([['','index.html'],['app.mjs','app.mjs'],['analytics.mjs','analytics.mjs'],['plot-window.mjs','plot-window.mjs'],['style.css','style.css']]);
 export const server=http.createServer(async(req,res)=>{
   res.setHeader('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; frame-ancestors 'none'");
   res.setHeader('X-Content-Type-Options','nosniff'); res.setHeader('Cache-Control','no-store');

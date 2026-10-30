@@ -19,3 +19,5 @@ Production uses FNO_AOC_BRIDGE=1 through the existing FNO Analyzer loopback API,
 Analyzer responses must set their own CSP so the portal restrictive login CSP does not block scripts/styles. Status exposes latestSnapshotAt and persistent lastSavedAt from SQLite; UI displays both in IST independently of replay reference time.
 
 Both NIFTY and NIFTY-AI are recorded independently. SQLite key is (symbol, minute); legacy NIFTY rows migrate atomically. AOC NIFTY-AI currently reports underlying s=nifty (16-strike chain); accept that explicit alias only for requested NIFTY-AI and retain requested symbol as dataset identity. UI symbol selector preserves selection across polling; freshness/status are per symbol.
+
+Stability hover is minimal and transparent: one HH:MM header and strike/percentage rows only. Time range (5/15/30/60 minutes or Day) is independent per tab and affects X viewport only, ending at the reference snapshot. Preserve scroll around refresh/replots without overriding user input; reuse ATM chart/card nodes with Plotly.react to avoid transient layout collapse.

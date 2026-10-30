@@ -35,3 +35,5 @@ Use `ecosystem.config.cjs` with PM2: loopback 5005, workspace authentication ena
 `npm run check` and `npm test`. Tests use synthetic fixtures, not private downloaded data. Tests cover ranking, normalization, markers, ATM/Cross OI, source validation, the inclusive schedule, retention, deduplication, live priority, backfill, assets and authentication.
 
 Select NIFTY or NIFTY-AI in the Symbol dropdown. Both use the shared FNO token, recording window and current-day retention. NIFTY-AI currently returns 16 strikes and underlying label `nifty`; the requested API symbol is stored separately so its records never overwrite NIFTY. Existing NIFTY records are preserved by an atomic schema migration.
+
+Time range dropdown on both tabs offers 5 min, 15 mins, 30 mins, 1 hour or Day; shorter windows follow the latest displayed/reference snapshot. Rank selection and percentages remain unchanged by the viewport. Stability hover uses a transparent background with time once and strike/percentage rows. Replots preserve scroll, and ATM card nodes are reused on updates.
