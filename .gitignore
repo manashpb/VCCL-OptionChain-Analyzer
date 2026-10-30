@@ -1,0 +1,15 @@
+aoctoken.txt
+.venv/
+data/
+__pycache__/
+node_modules/
+*.log
+.env
+.env.*
+!.env.example
+*.sqlite*
+*.db
+*.png
+*.pem
+*.key
+*.bundle
