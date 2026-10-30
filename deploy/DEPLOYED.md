@@ -20,3 +20,5 @@ The verifier does not print credentials or cookies.
 For updates, fast-forward the app checkout, run `npm ci`, `npm run check`, `npm test`, restart only `optionchain-analyzer` with its ecosystem file and save PM2. Preserve the private token file and database. The previous source revision can be restored and this service restarted for code rollback. Do not restart unrelated applications.
 
 Shared-token update: adapter tests pass for live/historical/expiry routes, credential isolation and full-chain preservation. Only the analyzer service needs restarting for this configuration; the FNO service and credential permissions remain unchanged.
+
+NIFTY-AI update: independent symbol/minute keys migrated without losing existing NIFTY records. Shared FNO live and historical API calls returned the 16-strike NIFTY-AI chain, and production saved both live and backfilled NIFTY-AI snapshots. The Symbol dropdown controls both plot tabs and per-symbol freshness timestamps. Both symbols retain only the current IST day.
