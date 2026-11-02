@@ -21,3 +21,5 @@ Analyzer responses must set their own CSP so the portal restrictive login CSP do
 Both NIFTY and NIFTY-AI are recorded independently. SQLite key is (symbol, minute); legacy NIFTY rows migrate atomically. AOC NIFTY-AI currently reports underlying s=nifty (16-strike chain); accept that explicit alias only for requested NIFTY-AI and retain requested symbol as dataset identity. UI symbol selector preserves selection across polling; freshness/status are per symbol.
 
 Stability hover is minimal and transparent: one HH:MM header and strike/percentage rows only. Time range (5/15/30/60 minutes or Day) is independent per tab and affects X viewport only, ending at the reference snapshot. Preserve scroll around refresh/replots without overriding user input; reuse ATM chart/card nodes with Plotly.react to avoid transient layout collapse.
+
+The standalone AOC client retries the alternate official v27 mirror on network failures or HTTP 5xx, retains the working mirror, and skips failed mirrors for five minutes. Authentication, 404 and rate-limit errors never trigger mirror retries. Production inherits this behavior through the shared FNO bridge.
