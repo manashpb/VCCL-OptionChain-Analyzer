@@ -37,3 +37,9 @@ Use `ecosystem.config.cjs` with PM2: loopback 5005, workspace authentication ena
 Select NIFTY or NIFTY-AI in the Symbol dropdown. Both use the shared FNO token, recording window and current-day retention. NIFTY-AI currently returns 16 strikes and underlying label `nifty`; the requested API symbol is stored separately so its records never overwrite NIFTY. Existing NIFTY records are preserved by an atomic schema migration.
 
 Time range dropdown on both tabs offers 5 min, 15 mins, 30 mins, 1 hour or Day; shorter windows follow the latest displayed/reference snapshot. Rank selection and percentages remain unchanged by the viewport. Stability hover uses a transparent background with time once and strike/percentage rows. Replots preserve scroll, and ATM card nodes are reused on updates.
+
+## Dhan live collection
+
+The default provider is the shared FNO Dhan bridge on loopback port 8001. It records NIFTY only to `data/current-day-dhan.sqlite3`, preserving the old AOC database. One process-wide recorder samples every 60–70 seconds during 09:15–15:30 IST on weekdays; configured holidays are blocked by FNO. Missed samples remain gaps. There is no historical catch-up or after-hours collection. Errors back off up to 15 minutes; authentication failures pause until Token Sync and a recorder restart. Dhan times are snapshot acquisition times, not verified exchange observation times. These load controls do not guarantee provider acceptance.
+
+`OPTIONCHAIN_PROVIDER=aoc` restores the original AOC collector only when AOC access has explicitly been resumed. Do not point `OPTIONCHAIN_DB` at the old AOC database when using Dhan.
