@@ -74,10 +74,10 @@ async function refreshData(){
  try{
   const [res,statusRes]=await Promise.all([fetch('./api/data'),fetch('./api/status?symbol='+encodeURIComponent(selectedSymbol))]);
   if(!res.ok||!statusRes.ok)throw Error('Workspace session or data service unavailable');
-  const status=await statusRes.json();if(refresh!==refreshGeneration)return;scrollPosition=captureScroll();const updated=t=>t?new Date(t).toLocaleString('en-GB',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',second:'2-digit'})+' IST':'Not available yet';$('data-freshness').textContent=status.mode==='replay'?'Local replay - saved archive':`Latest data snapshot: ${updated(status.latestSnapshotAt)} | Last successful save: ${updated(status.lastSavedAt)}`;document.querySelector('.tag').textContent=status.mode==='replay'?'LOCAL REPLAY':'CURRENT DAY';$('recorder-status').textContent=`${status.mode==='replay'?'Local replay':status.schedule+' | '+status.status+' | '+(status.saved??0)+' / '+(status.expected??0)+' snapshots'}${status.error?' | '+status.error:''}`;
+  const status=await statusRes.json();if(refresh!==refreshGeneration)return;scrollPosition=captureScroll();const updated=t=>t?new Date(t).toLocaleString('en-GB',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',second:'2-digit'})+' IST':'Not available yet';$('data-freshness').textContent=status.mode==='replay'?'Local replay - saved archive':`Latest acquisition snapshot: ${updated(status.latestSnapshotAt)} | Last successful save: ${updated(status.lastSavedAt)}`;document.querySelector('.tag').textContent=status.mode==='replay'?'LOCAL REPLAY':'CURRENT DAY';$('recorder-status').textContent=`${status.mode==='replay'?'Local replay':status.schedule+' | '+status.status+' | '+(status.saved??0)+' / '+(status.expected??0)+' snapshots'}${status.error?' | '+status.error:''}`;
   const next=await res.json();if(refresh!==refreshGeneration)return;const old=current,oldEnd=Number($('cutoff').value),follow=!old||oldEnd===old.records.length-1;
-  sets=next;const chosen=sets.find(s=>s.symbol===selectedSymbol);$('session').replaceChildren(...['NIFTY','NIFTY-AI'].map(symbol=>new Option(symbol,symbol,false,symbol===selectedSymbol)));$('instrument-symbol').textContent=selectedSymbol;
-  if(!chosen){current=null;$('coverage').textContent=`Waiting for ${selectedSymbol} current-day AOC snapshots`;$('expiry').textContent='No current-day snapshots';for(const el of document.querySelectorAll('.js-plotly-plot'))Plotly.purge(el);$('strike-grid').replaceChildren();$('atm-info').textContent='';return;}
+  sets=next;const chosen=sets.find(s=>s.symbol===selectedSymbol);$('session').replaceChildren(...(status.symbols??['NIFTY','NIFTY-AI']).map(symbol=>new Option(symbol,symbol,false,symbol===selectedSymbol)));$('instrument-symbol').textContent=selectedSymbol;
+  if(!chosen){current=null;$('coverage').textContent=`Waiting for ${selectedSymbol} current-day snapshots`;$('expiry').textContent='No current-day snapshots';for(const el of document.querySelectorAll('.js-plotly-plot'))Plotly.purge(el);$('strike-grid').replaceChildren();$('atm-info').textContent='';return;}
   const changed=!old||JSON.stringify(old)!==JSON.stringify(chosen);current=chosen;
   $('cutoff').max=current.records.length-1;
   $('cutoff').value=follow||old?.date!==current.date||old?.symbol!==current.symbol?current.records.length-1:Math.min(oldEnd,current.records.length-1);$('expiry').textContent=`Expiry ${current.expiry}`;
@@ -94,7 +94,7 @@ async function renderComparison(end,run){
 
   $('atm-info').textContent=result.atm===null?'ATM unavailable at this reference snapshot':`Spot ${result.spot.toLocaleString('en-IN')}  /  ATM ${result.atm.toLocaleString('en-IN')}  /  ${clock(current.records[end].requested_at)} IST`;
 
-  $('comparison-note').textContent=metric==='CrossOI'?'Cross OI: CE OI at each chart strike versus PE OI at the next higher available strike. Values use AOC source units.':'CE (red) versus PE (green) at the same strike. Values use AOC source units; negative OI change is zero.';
+  $('comparison-note').textContent=metric==='CrossOI'?'Cross OI: CE OI at each chart strike versus PE OI at the next higher available strike. Values use provider source units.':'CE (red) versus PE (green) at the same strike. Values use provider source units; negative OI change is zero.';
 
   const grid=$('strike-grid');const windowSpec=plotWindow(current.records,end,timeWindows.comparison);
 
@@ -151,4 +151,4 @@ for(const dimension of ['width','height'])$('plot-'+dimension).oninput=()=>{plot
 $('size-reset').onclick=()=>{plotSizes[activeTab]={width:100,height:100};applyPlotSize();try{localStorage.setItem('optionchain-plot-sizes',JSON.stringify(plotSizes));}catch{}};
 applyPlotSize();
 
-await refreshData();setInterval(refreshData,15000);
+await refreshData();setInterval(()=>{if(!document.hidden)refreshData();},60000);
