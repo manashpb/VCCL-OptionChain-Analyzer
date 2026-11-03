@@ -5,11 +5,11 @@ const $=id=>document.getElementById(id);
 
 const lineStyle=(rank,side)=>({color:rank===0?(side==='c'?'#dc2626':'#16a34a'):['','#eab308','#9333ea','#2563eb'][rank],width:rank<2?3.5:2,dash:['solid','dash','dash','dot'][rank]});
 
-const clock=t=>new Date(t).toLocaleTimeString('en-GB',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit'});
+const clock=t=>new Date(t).toLocaleTimeString('en-GB',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit'});
 
 const source=t=>t?new Date(t).toLocaleTimeString('en-GB',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit'}):'unavailable';
 
-let sets=[], current, generation=0, activeTab="stability", selectedSymbol="NIFTY", refreshGeneration=0;
+let sets=[], current, generation=0, activeTab="stability", selectedSymbol="NIFTY", refreshGeneration=0, refreshPending=false;
 
 for(const [index,metric] of metrics.entries()){
 
@@ -36,7 +36,7 @@ async function renderPlots(){
 
   const stale=rows.filter(r=>r.quality!=='near_requested_time').length;
 
-  $('coverage').textContent=`${current.symbol} · ${rows.length} requested minutes · ${rows.length-stale} usable snapshots · 1 minute interval`;
+  $('coverage').textContent=`${current.symbol} · ${rows.length} sample positions · ${rows.length-stale} usable snapshots · 30–40 second recording`;
 
   $('warning').textContent=stale?`${stale} stale or missing snapshot excluded from chart values. Source timestamps are preserved; missing values are not fabricated.`:'';
 
@@ -70,9 +70,10 @@ $('latest').onclick=()=>{$('cutoff').value=current.records.length-1;render();};
 $('reset').onclick=()=>{if(!current)return;const range=plotWindow(current.records,Number($('cutoff').value),timeWindows[activeTab]).range;const charts=activeTab==='comparison'?document.querySelectorAll('#strike-grid .chart'):document.querySelectorAll('#plots .chart');for(const el of charts)if(el.classList.contains('js-plotly-plot'))Plotly.relayout(el,{'xaxis.range':range,...(activeTab==='stability'?{'yaxis.range':[50,100]}:{'yaxis.autorange':true})});};
 
 async function refreshData(){
+ if(refreshPending)return;refreshPending=true;
  const refresh=++refreshGeneration;let scrollPosition;
  try{
-  const [res,statusRes]=await Promise.all([fetch('./api/data'),fetch('./api/status?symbol='+encodeURIComponent(selectedSymbol))]);
+  const [res,statusRes]=await Promise.all([fetch('./api/data',{cache:'no-store'}),fetch('./api/status?symbol='+encodeURIComponent(selectedSymbol),{cache:'no-store'})]);
   if(!res.ok||!statusRes.ok)throw Error('Workspace session or data service unavailable');
   const status=await statusRes.json();if(refresh!==refreshGeneration)return;scrollPosition=captureScroll();const updated=t=>t?new Date(t).toLocaleString('en-GB',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',second:'2-digit'})+' IST':'Not available yet';$('data-freshness').textContent=status.mode==='replay'?'Local replay - saved archive':`Latest acquisition snapshot: ${updated(status.latestSnapshotAt)} | Last successful save: ${updated(status.lastSavedAt)}`;document.querySelector('.tag').textContent=status.mode==='replay'?'LOCAL REPLAY':'CURRENT DAY';$('recorder-status').textContent=`${status.mode==='replay'?'Local replay':status.schedule+' | '+status.status+' | '+(status.saved??0)+' / '+(status.expected??0)+' snapshots'}${status.error?' | '+status.error:''}`;
   const next=await res.json();if(refresh!==refreshGeneration)return;const old=current,oldEnd=Number($('cutoff').value),follow=!old||oldEnd===old.records.length-1;
@@ -82,7 +83,7 @@ async function refreshData(){
   $('cutoff').max=current.records.length-1;
   $('cutoff').value=follow||old?.date!==current.date||old?.symbol!==current.symbol?current.records.length-1:Math.min(oldEnd,current.records.length-1);$('expiry').textContent=`Expiry ${current.expiry}`;
   if(changed)await render();
- }catch(e){$('recorder-status').textContent=e.message;$('data-freshness').textContent='Unable to check data update time. Sign in again if your session expired.';}finally{restoreScroll(scrollPosition);}
+ }catch(e){$('recorder-status').textContent=e.message;$('data-freshness').textContent='Unable to check data update time. Sign in again if your session expired.';}finally{refreshPending=false;restoreScroll(scrollPosition);}
 }
 
 
@@ -151,4 +152,6 @@ for(const dimension of ['width','height'])$('plot-'+dimension).oninput=()=>{plot
 $('size-reset').onclick=()=>{plotSizes[activeTab]={width:100,height:100};applyPlotSize();try{localStorage.setItem('optionchain-plot-sizes',JSON.stringify(plotSizes));}catch{}};
 applyPlotSize();
 
-await refreshData();setInterval(()=>{if(!document.hidden)refreshData();},60000);
+await refreshData();setInterval(()=>{if(!document.hidden)refreshData();},10000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshData();});
+window.addEventListener('focus',()=>refreshData());

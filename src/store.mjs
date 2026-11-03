@@ -21,13 +21,26 @@ export class Store{
   if(n){this.db.exec('PRAGMA wal_checkpoint(TRUNCATE); VACUUM; PRAGMA wal_checkpoint(TRUNCATE);');this.revision++;}
  }
  save(minute,expiry,record,source,symbol='NIFTY'){if(dayAt(minute)!==dayAt())throw Error('Only current-day records may be stored');
-  this.db.prepare('INSERT INTO snapshots(day,minute,expiry,quality,source,payload,updated_at,symbol) VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(symbol,minute) DO UPDATE SET expiry=excluded.expiry,quality=excluded.quality,source=excluded.source,payload=excluded.payload,updated_at=excluded.updated_at WHERE snapshots.quality<>\'near_requested_time\'').run(dayAt(minute),minute,expiry,record.quality,source,gzipSync(JSON.stringify(record)),Date.now(),symbol);this.revision++;
+  const result=this.db.prepare('INSERT INTO snapshots(day,minute,expiry,quality,source,payload,updated_at,symbol) VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(symbol,minute) DO UPDATE SET expiry=excluded.expiry,quality=excluded.quality,source=excluded.source,payload=excluded.payload,updated_at=excluded.updated_at WHERE snapshots.quality<>\'near_requested_time\'').run(dayAt(minute),minute,expiry,record.quality,source,gzipSync(JSON.stringify(record)),Date.now(),symbol);if(result.changes)this.revision++;
  }
  saved(day=dayAt(),symbol='NIFTY'){return new Map(this.db.prepare('SELECT minute,quality FROM snapshots WHERE day=? AND symbol=?').all(day,symbol).map(r=>[r.minute,r.quality]));}
  read(day=dayAt(),symbol=null){
   if(!symbol)return ['NIFTY','NIFTY-AI'].flatMap(s=>this.read(day,s));
   const rows=this.db.prepare('SELECT * FROM snapshots WHERE day=? AND symbol=? ORDER BY minute').all(day,symbol);if(!rows.length)return [];
   const expiry=rows[0].expiry;
+  if(rows.every(row=>row.source==='dhan-live')){
+   const records=[];let previous=session(rows[0].minute).start;
+   for(const row of rows){
+    const r=JSON.parse(gunzipSync(row.payload).toString()),at=Date.parse(r.observed_at);
+    if(!Number.isFinite(at))continue;
+    // Normal jitter is not missing data. Longer outages retain explicit gaps.
+    if(at-previous>80000)records.push({requested_at:stamp(previous+40000),observed_at:null,quality:'missing',spot:null,strikes:[]});
+    records.push({requested_at:stamp(at),observed_at:r.observed_at,quality:r.quality,spot:r.spot,source:row.source,
+     strikes:r.normalized.strikes.map(s=>Object.fromEntries(['sp','cVol','pVol','cOI','pOI','cOIC','pOIC'].map(k=>[k,s[k]])))});
+    previous=at;
+   }
+   return [{date:day,expiry,symbol,records}];
+  }
   const byMinute=new Map(rows.map(row=>[row.minute,row]));
   const start=session(rows[0].minute).start,last=rows.at(-1).minute;
   const timeline=Array.from({length:Math.floor((last-start)/60000)+1},(_,i)=>start+i*60000);

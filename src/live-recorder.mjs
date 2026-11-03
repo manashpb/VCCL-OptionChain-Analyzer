@@ -9,7 +9,7 @@ export class LiveRecorder {
  async tick(now=this.now()){
   if(this.running||this.authBlocked||now<this.nextAt)return;
   this.running=true;
-  this.nextAt=now+60000+Math.floor(this.random()*10000);
+  this.nextAt=now+30000+Math.floor(this.random()*10000);
   try{
    const day=dayAt(now),start=Date.parse(day+'T09:15:00+05:30'),end=Date.parse(day+'T15:30:00+05:30');
    const weekday=new Date(now+19800000).getUTCDay();
@@ -22,7 +22,7 @@ export class LiveRecorder {
       dayAt(acquired)!==day||Math.abs(acquired-now)>90000||acquired<start||acquired>end||
       snapshot?.s!=='NIFTY'||!expiryDay(snapshot.exp)||expiryDay(snapshot.exp)<day||!strikes?.length)
     throw Error('Dhan acquisition snapshot is invalid or stale');
-   const minute=Math.floor(acquired/60000)*60000;
+   const minute=acquired;
    const record={requested_at:stamp(minute),observed_at:stamp(acquired),quality:'near_requested_time',
     timestamp_kind:'snapshot-acquisition',spot:Number(snapshot.uv),normalized:{snapshot,strikes}};
    this.store.save(minute,snapshot.exp,record,'dhan-live','NIFTY');
